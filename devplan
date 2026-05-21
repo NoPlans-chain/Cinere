@@ -1,0 +1,74 @@
+# Ex Cinere — Full Development Roadmap (MVP Focus)
+
+This roadmap defines the staged implementation of the Ex Cinere simulation.
+
+---
+
+# 🧱 PHASE 1 — THE PROXIMITY ENGINE (BLE)
+
+| Step | System | Goal |
+|---|---|---|
+| 1.1 | BLE Service | Implement background scanning/advertising for iOS & Android. |
+| 1.2 | Bonding Logic | Detect ~10m proximity for 30s to trigger bond creation. |
+| 1.3 | Chain System | Manage multi-link chains and shared buff calculation. |
+| 1.4 | Anti-Cheat | Integrate accelerometer-based movement validation. |
+| 1.5 | Sync Service | Store proximity state locally and sync to Supabase when online. |
+
+---
+
+# ⚔️ PHASE 2 — COMBAT & SURVIVAL
+
+| Step | System | Goal |
+|---|---|---|
+| 2.1 | Survivor Model | Implement roles (Scout, Medic, Engineer, Cook, Guard). |
+| 2.2 | Raid Engine | Asynchronous 2-minute commitment window resolution. |
+| 2.3 | Hardcore Logic | Implement Level 1-99 progression and permanent death reset. |
+| 2.4 | Loot System | Create BLE-broadcast loot chests with killer priority. |
+| 2.5 | Defensive Gap | Implement the quadratic instakill bonus for low-level defenders. |
+
+---
+
+# 💰 PHASE 3 — MACROECONOMY & CURRENCIES
+
+| Step | System | Goal |
+|---|---|---|
+| 3.1 | Valuables | Implement sovereign currency with configurable backing. |
+| 3.2 | Receipts | Create proximity-redeemable commodity receipt system. |
+| 3.3 | Order Book | Global asset trading engine with 5% auto-match rule. |
+| 3.4 | Cipher Ledger | Encrypted syndicate scrip system with leader visibility. |
+| 3.5 | Derivatives | Implement resource futures and options. |
+
+---
+
+# 🏛️ PHASE 4 — POLITICAL & SYNDICATE LAYERS
+
+| Step | System | Goal |
+|---|---|---|
+| 4.1 | Elections | Reputation-gated national election system. |
+| 4.2 | Governance | Leadership tools for setting tariffs, embargos, and monetary policy. |
+| 4.3 | Syndicates | Infamy-gated shadow power structures and Cipher minting. |
+| 4.4 | Collapses | Currency destabilization and snap election mechanics. |
+| 4.5 | Turf System | Syndicate-claimed logical zones in the proximity graph. |
+
+---
+
+# 🖥️ PHASE 5 — THE WASTELAND TERMINAL (UI/UX)
+
+| Step | System | Goal |
+|---|---|---|
+| 5.1 | App Shell | Mobile-first terminal-style layout (React/Vite). |
+| 5.2 | Proximity Feed | Realtime visualization of nearby entities and chain status. |
+| 5.3 | Market UI | Global order book ticker and derivative charts. |
+| 5.4 | Caravan Manager | Survivor management and camp upgrade interface. |
+| 5.5 | Event Feed | Macroeconomic and proximity alerts (News stream). |
+
+---
+
+# 🔒 PHASE 6 — STABILITY & SCALE
+
+| Step | System | Goal |
+|---|---|---|
+| 6.1 | Determinism | Verify tick engine consistency across multiple workers. |
+| 6.2 | Security | Rate-limiting and spoof-prevention for BLE signatures. |
+| 6.3 | Rollbacks | Implement tick-level state recovery for simulation errors. |
+| 6.4 | Performance | Optimize background BLE power consumption (1-3%/hour target). |

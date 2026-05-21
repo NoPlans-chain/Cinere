@@ -1,0 +1,548 @@
+# Ex Cinere
+### Walk Together. Survive Together.
+**Game Design Document | v0.3 | May 2026**
+
+---
+
+| Field | Value |
+|---|---|
+| Genre | Proximity Social / Survival RPG / Political Economy Sim |
+| Platform | iOS & Android |
+| Core Tech | Bluetooth Low Energy (BLE) proximity — no GPS at any point |
+| Session Type | Ambient / passive — runs while you move through the world |
+| Target Audience | Commuters, urban walkers, festival crowds, strategy players |
+| Tone | Post-apocalyptic — gritty, community-driven, politically complex |
+| Hardcore Mode | ALWAYS ON. Death resets level to 1. Rep and infamy persist. |
+| Economy | Global hybrid sim: order book + agent model. Real player participation. |
+
+---
+
+## 1. Concept & Vision
+
+> *"The world ended. But people still walk. And wherever people walk together, something new grows."*
+
+Caravan is a Bluetooth proximity game where walking near other players forges bonds between your caravans. The longer you walk in proximity, the longer your chain — and longer chains unlock shared survival bonuses neither player could achieve alone.
+
+The game runs quietly in your pocket. No GPS. No maps. The entire world is defined by one thing: who is physically near you right now, and what they are willing to do. Every stranger is an unknown quantity — a potential chain-mate, a hostile raider, a black market trader, or a political operative moving resources across a fractured wasteland economy.
+
+Beneath the street-level survival game sits a living macroeconomy: nations issuing currencies, syndicates running shadow ledgers, derivative markets pricing future scarcity, and political leaders who can embargo entire commodity classes — or be brought down by the syndicates they tried to suppress.
+
+---
+
+## 2. Core Game Loop
+
+### 2.1 The Proximity Bond
+
+When two players with Caravan installed are within BLE range (~10m) for at least 30 seconds, their caravans begin linking. Chain strength is measured in seconds of proximity. Leaving range pauses the counter; returning resumes it. Bonds decay at 50% per 48 real-world hours without renewal.
+
+### 2.2 Chain Building
+
+Chains extend through the social graph: A chains to B, B chains to C — the bonus pool grows with each link. Chains can extend indefinitely but bonuses are tuned for realistic groups of 2–8. A chain of strangers on a commuter train, a protest, a crowded market — these are the naturally emergent structures the game rewards.
+
+> No GPS is used at any point. The entire world of Caravan is defined by BLE proximity alone. Physical movement is the only map.
+
+### 2.3 The Caravan
+
+Each player owns a Caravan — a post-apocalyptic survivor group with:
+
+- **Survivors** — named characters with roles: Scout, Medic, Engineer, Cook, Guard
+- **Resources** — Food, Water, Fuel, Scrap, Medicine, and currency holdings
+- **A Camp** — upgradeable base that stores resources and buffs survivors
+- **A Level** — player progression 1–99. Always hardcore. Death resets to 1.
+- **Reputation or Infamy** — persistent through death. The social record of who you are.
+
+### 2.4 Time & Decay
+
+Time passes at a 10:1 ratio. Survivors consume resources daily. The game is designed so active urban commuters sustain a healthy caravan without grinding — the pressure is gentle but persistent, and isolation is always the slow death.
+
+---
+
+## 3. Bluetooth Proximity Mechanic
+
+### 3.1 Technical Approach
+
+Caravan uses Bluetooth Low Energy (BLE) advertising and scanning — the same technology as AirDrop and COVID exposure notification. No GPS is required at any point. The game world is defined entirely by BLE proximity.
+
+| Field | Value |
+|---|---|
+| Detection Range | ~10m (adjustable via signal strength threshold) |
+| Min Link Time | 30 seconds continuous proximity to form a bond |
+| Background Mode | BLE scanning continues when app is backgrounded (iOS & Android) |
+| Battery Impact | Approx. 1–3% per hour — similar to Apple Find My |
+| Privacy | No GPS ever. Device broadcasts an anonymous rotating token only. |
+| Server Sync | State synced when internet available; full offline play supported |
+
+### 3.2 Proximity Zones
+
+| Zone | Effect |
+|---|---|
+| Close (0–3m) | Chain builds at 2x speed. High confidence of intentional co-presence. |
+| Near (3–10m) | Chain builds at 1x speed. Standard proximity. |
+| Distant (10–20m) | Chain pauses, does not decay. Grace zone for crowded spaces. |
+
+### 3.3 Anti-Gaming
+
+- Chains only build when at least one device registers motion via accelerometer
+- Same device pair caps at 90 minutes of chain-building per day
+- Stationary proximity in same cell for >5 minutes enters base camp mode, pausing chain growth
+
+---
+
+## 4. Entity Types
+
+Every entity in Caravan is a real BLE device. No server-spawned world. Three types are distinguished by app state, player opt-in flags, and behaviour signals.
+
+### 4.1 Hostile Mobs
+
+> *Raiders are players who have opted into Raider Mode, or server-seeded bots ensuring danger exists even in sparse areas.*
+
+Raider Mode is an opt-in toggle. When active, a player's caravan is flagged hostile to all nearby non-chained players. Raiders earn bonus loot multipliers and access to the Raider economy — black market goods unavailable to civilians. In return, they accumulate Infamy (see Section 11).
+
+| Tier | Encounter Signal | Threat Profile |
+|---|---|---|
+| Scavenger | 1–2 nearby hostiles | Low HP, fast. Drops basic resources. Targets isolated low-levels. |
+| Raider Band | 3–5 nearby hostiles | Coordinated. Targets mid-level players. Drops equipment and currency. |
+| Warlord Crew | 6+ nearby hostiles | Rare. Extremely dangerous. Guards high-tier loot. Attacks organised chains. |
+| Server Bot | No nearby players | AI-simulated. Weaker than real Raiders. Ensures the game is never empty. |
+
+Combat resolves asynchronously. When a hostile enters proximity, a raid event begins — a 2-minute commitment window opens, both parties secretly allocate fighters and equipment, and the outcome resolves at timer expiry. Neither player needs to be actively watching.
+
+### 4.2 Neutral Players
+
+> *Neutrals have not opted into any faction. They will not attack unprovoked but will defend if raided.*
+
+Neutral players appear as unknown silhouettes in the proximity feed. Behaviour reveals intent: a neutral who stays in range 5+ minutes without initiating is likely a commuter. One who ping-pongs in and out is likely probing defences.
+
+### 4.3 Friendly NPC Traders
+
+> *Traders are server-seeded bots and players in Merchant Mode. They do not attack and cannot be attacked by civilians. Raiders who attack Merchants suffer a Market Reputation penalty.*
+
+Traders broadcast a recognisable BLE signal pattern visible in the proximity UI. When a Trader enters range, their wares appear in the market screen. Prices are set by the Trader (bot) or the player in Merchant Mode. All Trader transactions settle immediately.
+
+---
+
+## 5. Combat System
+
+### 5.1 Raid Resolution
+
+- Both parties see a 2-minute commitment window when a raid begins
+- Each party secretly allocates Fighters (survivors) and Equipment (consumables)
+- Active chain members in proximity apply a defensive bonus to the defender
+- At timer expiry, outcome resolves based on committed power plus 10–15% random variance
+- Survivors can be injured (temporary) or killed (permanent) based on margin of defeat
+
+### 5.2 Defensive Instakill — Level Gap Mechanic
+
+> **This bonus fires ONLY when a higher-level player initiates an attack against a lower-level player. It cannot be used offensively. A lower-level player who initiates an attack receives no instakill bonus.**
+
+When a higher-level player attacks a lower-level player, the defender gains a defensive instakill chance:
+
+```
+instakill_chance = (level_gap / 98)^2 * 35%    [defender only — never on offence]
+```
+
+This scales quadratically — negligible for small gaps, significant for large ones. At maximum gap (level 99 attacking level 1), the defender has a ~35% chance of an outright kill, resetting the attacker to level 1 and dropping their full loot. The mechanic functions as a natural deterrent against predatory targeting of new players, without a hard rule or lockout.
+
+| Gap | Instakill Chance | Attacker Risk Profile |
+|---|---|---|
+| < 20 levels | < 5% | Negligible. Near-fair combat, normal risk. |
+| 20–45 levels | 5–21% | Meaningful. Attacker should consider their exposure. |
+| 45–70 levels | 21–30% | High. Attacker is gambling significant progression. |
+| 70–98 levels | 30–35% | Severe. Attacking a near-new player is likely unprofitable. |
+
+### 5.3 Hardcore Mode — Always On
+
+> *There is no softcore mode. There never will be. Death is the central dramatic engine of the game's economy.*
+
+When a player's last survivor is killed:
+
+- Player level resets to 1
+- All equipped items and held resources drop as a loot bundle in the BLE context of death
+- Reputation and Infamy scores are fully preserved — social standing survives death
+- Open market orders are cancelled; escrowed assets enter the loot pool
+- Camp structures and upgrades are preserved — your base survives
+- Survivor names and history are memorialised in the Lost Caravan log
+- A 10-minute protection window activates — cannot be raided immediately
+
+A level 99 player dying to a coordinated Raider gang and dropping legendary gear into the world is the story Caravan is built to tell. High-level player deaths are the economy's primary liquidity events.
+
+---
+
+## 6. Loot System
+
+### 6.1 Loot Drops
+
+When a player dies or a raid is won decisively, loot drops as a timed chest broadcast over BLE. The chest is tied to the BLE context of death — not a GPS location.
+
+| Field | Value |
+|---|---|
+| Drop Broadcast | Chest signal broadcasts to all devices within ~15m BLE range at moment of drop |
+| Killer Priority | Killing player (or their chain) has a 60-second exclusive claim window |
+| Open Window | After 60 seconds, any nearby player can claim the chest |
+| Chain Share | Chain members share the exclusive window — first-come first-served within it |
+| Chest Decay | Unclaimed chests expire after 10 minutes; resources partially recycle to economy |
+
+> *The loot is there. Someone nearby will get it. Your chain-mates might grab it first. This is intentional. Combat is a gamble, not a guarantee.*
+
+### 6.2 Loot Tiers
+
+| Tier | Source | Contents |
+|---|---|---|
+| Common | Scavenger kills, Trader remnants | Basic resources: Food, Water, Scrap, small currency |
+| Uncommon | Raider Band kills, PvP victories | Equipment: weapons, armour, survivor skill books |
+| Rare | Warlord Crew kills, high-level PvP | Named Equipment: items with unique modifiers |
+| Legendary | Level 80–99 player deaths | Full equipment sets, rare blueprints, large currency |
+
+### 6.3 Bound Items
+
+Legendary items become Bound on equip — untradeable until their carrier dies. Bound items can only re-enter the economy through death, ensuring legendary gear remains scarce and its movement through the world is always a consequence of violence.
+
+---
+
+## 7. Currency System
+
+> *Caravan operates a multi-currency economy. There is no single universal medium of exchange. Nations set their own monetary policy, syndicates run parallel shadow ledgers, and the exchange rates between them are live market signals.*
+
+### 7.1 Tier 1 — Sovereign Currency (Valuables)
+
+Valuables is the primary in-game currency denomination. Each nation issues its own named variant, and the backing mechanism is determined by that nation's elected leader:
+
+| Backing Method | Description |
+|---|---|
+| Commodity-pegged | Currency is redeemable for a fixed quantity of a specific resource. Stable under normal conditions; vulnerable to embargos targeting that commodity. |
+| Free-floating | Value determined entirely by market confidence and supply/demand. Flexible but susceptible to bank runs and coordinated sell pressure. |
+| Mixed reserve | Nation holds a basket of commodities and Cipher reserves as backing. More resilient; requires active treasury management. |
+| Undeclared | Leader has not published backing method. High uncertainty premium — players discount the currency in exchange. |
+
+Nations tax transactions denominated in their currency. Tax rates are set by the elected leader and apply to all market orders settled in that nation's Valuables. Tax revenue flows to the national treasury, which the leader can spend on public bonuses, infrastructure, or military responses.
+
+### 7.2 Tier 2 — Commodity Receipts
+
+Any player holding a physical resource can issue commodity receipts — tradeable notes redeemable for a specific quantity of that resource. Receipts are:
+
+- Tradeable on the global market order book
+- Priced by the market independently of Valuables
+- Redeemable only when the issuing player is within BLE range of the redeemer
+- Subject to counterparty risk — if the issuer dies before redemption, the receipt is worthless
+
+The counterparty risk on receipts creates a natural credit market. High-reputation players issue receipts that trade at face value. Unknown players find their receipts discounted. This is emergent creditworthiness — no explicit credit score system is needed.
+
+### 7.3 Tier 3 — Cipher (Syndicate Encrypted Scrip)
+
+> **Cipher is not cryptocurrency. It is a closed in-game ledger system — a tamper-evident private transaction record maintained by the game server on behalf of a syndicate. No real-world value. No external wallet. No withdrawal.**
+
+When a syndicate is founded or joined, its leader gains access to a private ledger — Cipher. Cipher functions as an alternative medium of exchange within and between syndicates:
+
+| Property | Detail |
+|---|---|
+| Issuance | Only the syndicate leader can mint new Cipher. Minting is rate-limited to prevent inflation abuse. |
+| Visibility | Only the syndicate leader sees the full transaction ledger. Members see their own balance and direct transactions only. |
+| Verification | All transactions are cryptographically signed by the game server — tamper-evident, non-repudiable. |
+| Anonymity | Transaction counterparties are visible only to the leader. Outsiders — including political authorities — cannot see Cipher flows. |
+| Interoperability | Each syndicate runs its own Cipher. Two syndicates can establish a Cipher Bridge at a negotiated exchange rate. |
+| Scope | Cipher is accepted wherever the syndicate has reach — primarily black market traders and Raider-aligned merchants. |
+
+### 7.4 Cipher Bridge — Syndicate Alliances
+
+A Cipher Bridge is a bilateral agreement between two syndicates to exchange their respective Cipher at a fixed or floating rate. Bridges are:
+
+- Negotiated directly between syndicate leaders
+- Published to both syndicates' members as a live exchange rate
+- Revocable by either leader at any time — revocation is a hostile act
+- The primary financial instrument of syndicate diplomacy
+
+Two syndicates with an active Cipher Bridge have a financial incentive to avoid direct conflict — disrupting the bridge destroys the exchange value held by both memberships. This creates emergent peace agreements backed by economic self-interest rather than rule enforcement.
+
+### 7.5 Exchange Rates
+
+Exchange rates between all currency types — Valuables variants, commodity receipts, and Cipher — are set by the global market's order book. Any player can place orders to exchange one currency for another. The 5% auto-match rule applies to all currency exchange orders.
+
+The Cipher/Valuables exchange rate is a live legitimacy signal. When Cipher trades at a premium to a nation's Valuables, it indicates market distrust of that nation's monetary policy. A widening spread is an early warning of political instability.
+
+---
+
+## 8. Market System
+
+### 8.1 Order Book
+
+All tradeable assets — resources, equipment, commodity receipts, currency pairs — are traded on a single global order book. The order book combines real player orders with agent-model liquidity from the economic simulation.
+
+| Field | Value |
+|---|---|
+| Buy Order | Player specifies asset and max price. Funds escrowed immediately. |
+| Sell Order | Player specifies asset and min price. Asset escrowed immediately. |
+| 5% Match Rule | Orders auto-fill when buy and sell prices are within 5% of each other. |
+| Settlement | Both parties receive their assets. Each pays/receives their stated price. No house spread. |
+| No Partial Fills | Orders are all-or-nothing per quantity unit. Stack orders for large volumes. |
+| Death Cancels | Player death cancels all open orders. Escrowed assets enter the loot pool. |
+| Order Cap | Maximum 20 open orders per player simultaneously. |
+
+### 8.2 Derivatives
+
+| Instrument | Description |
+|---|---|
+| Futures | Contract to buy or sell a fixed quantity of a resource at a fixed price on a future in-game date. Used to hedge against supply disruption from embargos or raids. |
+| Options | Right but not obligation to buy (call) or sell (put) a resource at a strike price before expiry. Premium paid upfront. Useful for speculating on political decisions. |
+| Spreads | Simultaneous buy and sell of futures at different dates — captures the price difference between near and far delivery. Standard arbitrage instrument. |
+
+Derivatives are priced by the agent simulation and player orders. A nation leader announcing an embargo on Fuel makes Fuel call options immediately valuable — players who positioned in advance profit significantly. This creates genuine information value around political decisions and syndicate intelligence.
+
+### 8.3 Market Reputation
+
+Players accumulate a Market Reputation score separate from combat Reputation or Infamy. Market Reputation is damaged by:
+
+- Defaulting on commodity receipt redemptions
+- Raiders attacking Merchant-mode players
+- Manipulative order placement (detected by agent sim as wash trading patterns)
+
+Low Market Reputation results in orders being deprioritised in matching queues and higher counterparty risk discounts applied to commodity receipts the player issues.
+
+---
+
+## 9. Chain Bonuses
+
+| Chain Length | Bonus Name | Effect |
+|---|---|---|
+| 2 links | Fellow Traveler | +10% resource generation for all chain members for 4 hours |
+| 3 links | Moving Convoy | Scouts travel 25% faster; reduced hostile encounter rate |
+| 4 links | Mutual Aid | Auto-transfer small resources to most depleted chain member |
+| 5 links | Shield Wall | 20% damage reduction for all chain members for 6 hours |
+| 6 links | Trade Caravan | Chain members can fill each other's orders directly, bypassing global queue |
+| 7 links | Old World Signal | All chain members' loot tier improves by one for 12 hours |
+| 8+ links | The Wandering City | All above bonuses simultaneously; +25% morale for 24 hours |
+
+---
+
+## 10. Survivor System
+
+### 10.1 Roles
+
+| Role | Passive Contribution |
+|---|---|
+| Scout | Detects hostile intent signals earlier; extends BLE awareness radius +2m; improves chain range |
+| Medic | Reduces survivor injury duration; remotely heals chain members' injured survivors |
+| Engineer | Boosts camp upgrade speed; reduces Fuel consumption; accelerates market escrow release |
+| Cook | Stretches food reserves; morale-boosting meals; buffs recovery after death |
+| Guard | Reduces raid damage; improves Shield Wall; chance to intercept loot grab during 60s window |
+
+### 10.2 Acquisition
+
+- Reaching chain length milestones for the first time
+- Purchasing survivor Blueprints on the market and constructing at camp
+- Completing chain-based quests with other players
+
+### 10.3 Permadeath
+
+Individual survivors can be injured or permanently killed in raids. A dead survivor is memorialised. If all survivors are killed, the player resets to level 1 — but Reputation, Infamy, camp structures, and Cipher balance are preserved.
+
+---
+
+## 11. Reputation & Infamy
+
+> *Reputation and Infamy are the only statistics that survive death. They are the game's long-term identity system — more durable than level, more meaningful than equipment.*
+
+### 11.1 Reputation
+
+Reputation is built by:
+
+- Completing trades without defaulting
+- Forming and maintaining long chains with other players
+- Healing or aiding chain members
+- Passive accumulation while active and not attacking human players or friendly NPCs
+
+Reputation never increases from combat. A player with high Reputation and zero kills has a higher Reputation ceiling than an equally experienced Raider. Reputation decays slowly with inactivity — approximately 10% per 30 real-world days offline.
+
+### 11.2 Infamy
+
+Infamy is built by:
+
+- Successful raids on human players
+- High-value kills (level gap, loot value dropped)
+- Controlling significant Cipher supply
+- Syndicate leadership tenure
+
+Infamy does not decay from inactivity — a notorious player is notorious indefinitely. It can be reduced by a sustained period of non-combat play, but the reduction is slow and the history is visible. The Lost Caravan log records major kill events permanently.
+
+### 11.3 Access Thresholds
+
+| Role | Primary Requirement | Notes |
+|---|---|---|
+| Syndicate membership | Infamy threshold (TBD playtesting) | Join existing NPC or player syndicate |
+| Syndicate founder | Higher Infamy threshold | Start a new player-owned syndicate |
+| Political candidate | High Reputation, zero player kills | Eligible for election in home nation |
+| Nation leader | Elected by player base | Full economic policy tools unlocked |
+| NPC Syndicate leader | Not achievable by players | Permanent NPC — world fixture |
+
+---
+
+## 12. Political System
+
+### 12.1 Nations
+
+A nation is not a geographic construct — there is no GPS. A nation is defined as a network of players who have declared allegiance to the same political entity. Nations form organically from high-density chain clusters. The boundaries are social, not spatial.
+
+### 12.2 Elections
+
+Any player meeting the Reputation threshold can stand for election. Elections are held on a fixed real-time cycle (proposed: 30 real days per term). Voting is open to all nation members above a minimum activity threshold. A player with high Infamy cannot run for office — the records are public.
+
+### 12.3 Leader Powers
+
+| Power | Effect |
+|---|---|
+| Embargo | Prohibits import or export of a named commodity to/from a named nation. Commodity prices rise in the embargoed market; commodity-backed currencies face inflation pressure. |
+| Tariff | Tax on trades involving a named commodity or foreign currency. Revenue goes to national treasury. Raises effective price for foreign buyers. |
+| Tax rate | Set the transaction tax rate on all Valuables-denominated trades within the nation. Too high drives players to Cipher; too low depletes the treasury. |
+| Treasury spend | Deploy treasury Valuables as public bonuses: chain bonus multipliers, camp upgrade subsidies, survivor recruitment drives. |
+| Declare sanctions | Formal hostile designation against a syndicate — increases costs for players trading in that syndicate's Cipher within the nation. |
+| Currency policy | Change or declare the nation's backing mechanism for Valuables. Undeclared policy incurs a market uncertainty discount. |
+
+### 12.4 Losing Office
+
+A nation leader loses office by:
+
+- Term expiry and electoral defeat
+- Currency collapse — if the nation's Valuables exchange rate falls below a critical threshold, a snap election is triggered automatically
+- Reputation collapse — if the leader's Reputation score falls (e.g. they begin attacking players), they are immediately disqualified and a new election is called
+
+---
+
+## 13. Syndicate System
+
+### 13.1 NPC Syndicates
+
+NPC syndicates are permanent world fixtures — ancient powers predating any player. Their leaders never change. They have fixed trading patterns, established Cipher networks, and historical relationships with specific commodities. They are the furniture of the wasteland economy that all players navigate around.
+
+NPC syndicates provide the baseline black market liquidity that new players encounter. They do not pursue political power directly but respond to embargos and sanctions with predictable economic countermeasures.
+
+### 13.2 Player Syndicates
+
+Player syndicates rise and fall with their founders' Infamy. A syndicate exists as long as its leader maintains sufficient Infamy to command loyalty and control Cipher supply. If the leader dies at a critical moment, the syndicate's Cipher loses confidence — members may defect to NPC syndicates or rival player factions.
+
+### 13.3 Syndicate Powers
+
+| Power | Effect |
+|---|---|
+| Cipher minting | Issue new Cipher (rate-limited). Fund operations, pay members, build reserves. |
+| Cipher Bridge | Establish bilateral exchange rate agreement with another syndicate. |
+| Black market access | Control which goods flow through the black market and at what premium over the official exchange. |
+| Bounties | Place Cipher bounties on named players — paid to whoever kills the target and delivers proof. |
+| Protection rackets | Offer Merchant-mode players protection from Raiders in exchange for Cipher tribute. |
+| Turf | Declare a BLE network cluster as syndicate territory — non-members pay a Cipher toll or face raiding. |
+
+### 13.4 Political-Syndicate Tension
+
+The core geopolitical dynamic: a nation leader can embargo a syndicate's key commodity, cutting its supply lines and driving up black market prices. The syndicate can respond by flooding the market with Valuables held in reserve, destabilising the nation's exchange rate. Neither side can directly destroy the other — they fight through market forces and proxy players.
+
+A well-coordinated multi-syndicate attack — triggered by an overreaching embargo — can cause a full currency collapse, ending the leader's term. This is the most sophisticated play in the game, requiring intelligence, coordination, and patience.
+
+---
+
+## 14. Currency Destabilisation
+
+> *Full currency collapse is possible. It requires coordinated multi-syndicate action and represents the most consequential event in the game's political economy.*
+
+### 14.1 Destabilisation Mechanics
+
+| Mechanism | Effect |
+|---|---|
+| Embargo inflation | Cutting a commodity-backed currency's peg commodity drives inflation. Players holding that currency lose purchasing power. Sell pressure accelerates. |
+| Cipher flood | Syndicate dumps large Valuables reserves onto the market via anonymous Cipher transactions. Sudden supply shock. Exchange rate falls. |
+| Bank run | Mass order cancellation and conversion to competing currencies or commodity receipts. Self-reinforcing: each exit makes remaining holders more anxious. |
+| Receipt default | If a major commodity receipt issuer dies or defaults, confidence in all receipts from that nation falls. Credit contraction. |
+| Tariff war | Two nations imposing retaliatory tariffs raises prices across the board, reducing real purchasing power of both currencies. |
+
+### 14.2 Collapse Outcome
+
+When a nation's Valuables exchange rate falls below the collapse threshold:
+
+- Snap election triggered — sitting leader immediately loses office
+- Nation reverts to barter or may voluntarily adopt a stronger nation's Valuables
+- Treasury holdings are distributed to nation members proportionally
+- All outstanding Valuables-denominated futures contracts settle at collapse price
+- Recovery requires a new elected leader to declare and sustain a new monetary policy
+
+Collapse is recoverable. A nation that collapses and rebuilds with a credible backing mechanism can regain market confidence. The political narrative of recovery — and the opportunistic players who bought the collapsed currency at the bottom — is part of the game's intended story.
+
+---
+
+## 15. Hardcore Economy Feedback Loop
+
+> *Hardcore mode is the market's engine. Every high-level death is a liquidity event. The market stays healthy only because death is permanent and loss is real.*
+
+The intended cycle:
+
+- Low-level players earn resources and gradually build strength and market position
+- Mid-level players engage in PvP, trade, and syndicate activity — accumulating equipment and currency
+- High-level players hold legendary gear and significant market positions — but are the most valuable targets
+- Death at level 99 floods the market with rare items and cancels large open orders — a liquidity event
+- New players enter cheaply, the cycle restarts
+
+Currency collapse events layer on top of this: a collapsed nation's Valuables trading at near-zero is an opportunity for low-level players to accumulate a position in a recovering economy. The same dynamics that punish complacent high-level players create entry points for new ones.
+
+---
+
+## 16. Monetisation
+
+> *Monetisation must never gate social mechanics, provide combat advantage, or allow real money to substitute for in-game economic activity.*
+
+| Item | Notes |
+|---|---|
+| Cosmetic Camps | Visual themes for your camp — aesthetic only |
+| Survivor Portraits | Custom artwork for survivor characters |
+| Caravan Name Tokens | Additional custom name slots (1 free rename per 30 days) |
+| Season Pass | Narrative expansion packs with new Encounter stories and Trader types |
+| Memorialisation | Permanent epitaph for a fallen high-level survivor in the Lost Caravan log |
+| **NOT for sale** | Combat stats, chain speed, market priority, death protection, level restoration, Cipher, Valuables, or any in-game currency or asset |
+
+---
+
+## 17. MVP Scope
+
+### 17.1 Must Have (Launch)
+
+- BLE proximity detection, background mode, iOS and Android
+- Chain formation and length tracking up to 8 links
+- Tier 1–4 chain bonuses
+- 3 entity types: hostile, neutral, trader — opt-in flags and server bots
+- Asynchronous combat resolution with 2-minute commitment window
+- Defensive instakill mechanic — level gap quadratic curve, 35% cap
+- Hardcore death: level reset, loot drop, 60-second killer priority window
+- Loot tiers Common through Legendary; Bound item system
+- Single primary currency (Valuables) with configurable backing
+- Global order book with 5% auto-match rule
+- Derivative instruments: futures and options on resource commodities
+- Cipher system: per-syndicate closed ledger, leader visibility, rate-limited minting
+- Cipher Bridge: bilateral syndicate exchange agreements
+- 5 survivor roles, no skill trees at launch
+- Basic political system: elections, tariffs, embargos
+- Reputation and Infamy systems with access thresholds
+- Anonymous identity — generated caravan names, no GPS, no real identity
+
+### 17.2 Post-Launch
+
+- Survivor skill trees and level progression depth
+- Full treasury management tools for nation leaders
+- Currency collapse and recovery mechanics (full implementation)
+- Bounty system for syndicates
+- Protection racket enforcement mechanics
+- NPC syndicate lore expansion and permanent fixture events
+- Faction/nation discovery — how new nations form from chain clusters
+- Seasonal economic events: supply shocks, world events affecting commodity prices
+- Lost Caravan memorialisation — public death records visible to all players
+
+---
+
+## 18. Open Design Questions
+
+- **Reputation thresholds:** Exact Infamy score for syndicate access and Reputation score for political candidacy require playtesting to calibrate.
+- **Nation formation:** How does a new nation form? Proposed: any player with sufficient Reputation can declare a nation and recruit members. First election held once membership exceeds a minimum threshold.
+- **Cipher inflation control:** The rate limit on Cipher minting needs a formula. Proposed: weekly mint cap = (syndicate member count × base rate) × infamy multiplier.
+- **Raider griefing on new spawns:** 10-minute protection window plus Raider reputation decay for low-level kills. The defensive instakill mechanic provides a second layer but may not be sufficient alone.
+- **Nation identity without GPS:** Without GPS, how do players know which nation they belong to? Proposed: explicit allegiance declaration in the app. Nation membership is opt-in, not spatially assigned.
+- **Chain orphaning during combat:** If a middle link in a chain goes offline mid-raid, does the chain defensive bonus hold for the duration or break immediately?
+- **Collapsed currency recovery:** What minimum term length before a collapsed currency can be considered recovered? Prevents rapid exploit cycles.
+- **BLE spoofing on Android:** Minimum viable anti-cheat for launch — needs hardware testing matrix across major Android manufacturers.
+
+---
+
+*CARAVAN GDD v0.3 — Not for distribution*

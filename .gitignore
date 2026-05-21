@@ -1,0 +1,17 @@
+.env
+.env.*
+node_modules/
+.next/
+.out/
+.DS_Store
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+pnpm-lock.yaml
+yarn.lock
+coverage/
+.vscode/
+*.log
+*.tgz
+*.cache*.pgn.zst

@@ -1,0 +1,28 @@
+:root {
+  --color-navy: #020617;
+  --color-orange: #ea580c;
+  --color-maroon: #7f1d1d;
+  --color-white: #ffffff;
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+body {
+  background-color: var(--color-navy);
+  color: var(--color-orange);
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+::selection {
+  background-color: var(--color-maroon);
+  color: var(--color-white);
+}
+
+/* Helper classes to replace common utilities used in your components */
+.text-orange { color: var(--color-orange); }
+.bg-navy { background-color: var(--color-navy); }
+.selection-maroon ::selection { background-color: var(--color-maroon); color: var(--color-white); }
